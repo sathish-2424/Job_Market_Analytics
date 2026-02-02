@@ -99,13 +99,7 @@ def load_data(file):
         return df
     return generate_data()
 
-# ================= SIDEBAR =================
-with st.sidebar:
-    st.title("TalentScout")
-    file = st.file_uploader("Upload Job Data (CSV)", type=["csv"])
-    st.caption("Demo data used if no file is uploaded")
 
-df = load_data(file)
 
 # ================= MAIN PAGE =================
 st.title("📊 Global Job Market Intelligence")
