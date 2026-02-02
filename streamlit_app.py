@@ -42,10 +42,6 @@ h1, h2, h3 {
     color: #64748B;
     font-size: 14px;
 }
-section[data-testid="stSidebar"] {
-    background-color: #FFFFFF;
-    border-right: 1px solid #EEF2F7;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -64,77 +60,86 @@ def metric_card(title, value):
 @st.cache_data
 def generate_data(rows=500):
     np.random.seed(42)
-    titles = ['Data Scientist','Software Engineer','Product Manager',
-              'UX Designer','DevOps Engineer','Data Analyst',
-              'Frontend Dev','Backend Dev']
-    companies = ['TechCorp','DataFlow','InnovateX','CloudSys',
-                 'SoftServe','AlphaWave','CyberNet','FutureScale']
-    countries = ['USA','UK','Germany','Canada','India','Australia','France']
-    modes = ['Remote','Hybrid','On-site']
-    contracts = ['Full-time','Contract','Internship','Part-time']
+    titles = [
+        "Data Scientist","Software Engineer","Product Manager",
+        "UX Designer","DevOps Engineer","Data Analyst",
+        "Frontend Dev","Backend Dev"
+    ]
+    companies = [
+        "TechCorp","DataFlow","InnovateX","CloudSys",
+        "SoftServe","AlphaWave","CyberNet","FutureScale"
+    ]
+    countries = ["USA","UK","Germany","Canada","India","Australia","France"]
+    modes = ["Remote","Hybrid","On-site"]
+    contracts = ["Full-time","Contract","Internship","Part-time"]
     skills = [
-        "Python, SQL, AWS, ML",
+        "Python, SQL, AWS, Machine Learning",
         "React, JavaScript, CSS",
-        "Java, Spring, Microservices",
+        "Java, Spring Boot, Microservices",
         "Docker, Kubernetes, Jenkins",
-        "Excel, PowerBI, Tableau"
+        "Excel, Power BI, Tableau"
     ]
 
     df = pd.DataFrame({
         "job_title": np.random.choice(titles, rows),
         "company": np.random.choice(companies, rows),
         "country": np.random.choice(countries, rows),
-        "mode": np.random.choice(modes, rows, p=[0.4,0.35,0.25]),
-        "contract": np.random.choice(contracts, rows, p=[0.7,0.15,0.1,0.05]),
-        "date_posted": [datetime.today() - timedelta(days=np.random.randint(0,60)) for _ in range(rows)],
+        "mode": np.random.choice(modes, rows, p=[0.4, 0.35, 0.25]),
+        "contract": np.random.choice(contracts, rows, p=[0.7, 0.15, 0.1, 0.05]),
+        "date_posted": [
+            datetime.today() - timedelta(days=np.random.randint(0,60))
+            for _ in range(rows)
+        ],
         "linkedin_skills": np.random.choice(skills, rows)
     })
     return df
 
 @st.cache_data
-def load_data(file):
-    if file:
-        df = pd.read_csv(file)
-        df.columns = df.columns.str.lower()
-        return df
+def load_data():
     return generate_data()
 
-
+df = load_data()
 
 # ================= MAIN PAGE =================
 st.title("📊 Global Job Market Intelligence")
+st.caption("High-level analysis of roles, skills, and hiring trends")
 
 # -------- KPIs --------
-c1,c2,c3,c4 = st.columns(4)
+c1, c2, c3, c4 = st.columns(4)
 with c1: metric_card("Active Jobs", len(df))
 with c2: metric_card("Companies", df["company"].nunique())
 with c3: metric_card("Countries", df["country"].nunique())
-with c4: metric_card("Avg Skills / Job", int(df["linkedin_skills"].str.count(",").mean()+1))
+with c4: metric_card(
+    "Avg Skills per Job",
+    int(df["linkedin_skills"].str.count(",").mean() + 1)
+)
 
 st.divider()
 
-# -------- ROLE & COMPANY --------
+# -------- ROLES & COMPANIES --------
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Top In-Demand Roles")
-    role_df = df["job_title"].value_counts().head(10).reset_index()
-    role_df.columns = ["Role","Count"]
+    roles = df["job_title"].value_counts().head(10).reset_index()
+    roles.columns = ["Role", "Openings"]
     fig_roles = px.bar(
-        role_df, x="Count", y="Role",
-        orientation="h", template="plotly_white", color="Count"
+        roles, x="Openings", y="Role",
+        orientation="h", template="plotly_white",
+        color="Openings"
     )
     st.plotly_chart(fig_roles, use_container_width=True)
 
 with col2:
     st.subheader("Top Hiring Companies")
-    comp_df = df["company"].value_counts().head(10).reset_index()
-    comp_df.columns = ["Company","Count"]
-    fig_comp = px.bar(
-        comp_df, x="Count", y="Company",
-        orientation="h", template="plotly_white", color="Count"
+    comps = df["company"].value_counts().head(10).reset_index()
+    comps.columns = ["Company", "Openings"]
+    fig_comps = px.bar(
+        comps, x="Openings", y="Company",
+        orientation="h", template="plotly_white",
+        color="Openings"
     )
-    st.plotly_chart(fig_comp, use_container_width=True)
+    st.plotly_chart(fig_comps, use_container_width=True)
 
 st.divider()
 
@@ -145,42 +150,50 @@ with c1:
     st.subheader("Work Mode Distribution")
     fig_mode = px.pie(
         df, names="mode",
-        template="plotly_white", hole=0.4
+        hole=0.45,
+        template="plotly_white"
     )
     st.plotly_chart(fig_mode, use_container_width=True)
 
 with c2:
-    st.subheader("Contract Type")
+    st.subheader("Contract Type Distribution")
     fig_contract = px.pie(
         df, names="contract",
-        template="plotly_white", hole=0.4
+        hole=0.45,
+        template="plotly_white"
     )
     st.plotly_chart(fig_contract, use_container_width=True)
 
 st.divider()
 
-# -------- TOP SKILLS --------
+# -------- SKILLS --------
 st.subheader("🔥 Most In-Demand Skills")
 skills = df["linkedin_skills"].str.split(",").explode().str.strip()
 skill_df = skills.value_counts().head(15).reset_index()
-skill_df.columns = ["Skill","Count"]
+skill_df.columns = ["Skill", "Demand"]
 
-fig_skill = px.bar(
-    skill_df, x="Skill", y="Count",
-    template="plotly_white", color="Count"
+fig_skills = px.bar(
+    skill_df,
+    x="Skill",
+    y="Demand",
+    template="plotly_white",
+    color="Demand"
 )
-st.plotly_chart(fig_skill, use_container_width=True)
+st.plotly_chart(fig_skills, use_container_width=True)
 
 st.divider()
 
-# -------- GEOGRAPHY --------
+# -------- GEO --------
 st.subheader("🌍 Job Distribution by Country")
 geo = df["country"].value_counts().reset_index()
-geo.columns = ["Country","Jobs"]
+geo.columns = ["Country", "Jobs"]
 
 fig_geo = px.choropleth(
-    geo, locations="Country", locationmode="country names",
-    color="Jobs", template="plotly_white",
+    geo,
+    locations="Country",
+    locationmode="country names",
+    color="Jobs",
+    template="plotly_white",
     color_continuous_scale="Blues"
 )
 st.plotly_chart(fig_geo, use_container_width=True)
