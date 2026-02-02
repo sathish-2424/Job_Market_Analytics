@@ -13,7 +13,13 @@ st.set_page_config(
     page_icon="📊"
 )
 
-# ================= WHITE PROFESSIONAL UI =================
+# ================= COLOR SYSTEM =================
+PRIMARY = "#2563EB"     # Blue
+SECONDARY = "#16A34A"   # Green
+ACCENT = "#F59E0B"      # Amber
+TEXT = "#020617"
+
+# ================= UI STYLE =================
 st.markdown("""
 <style>
 .stApp {
@@ -60,6 +66,7 @@ def metric_card(title, value):
 @st.cache_data
 def generate_data(rows=500):
     np.random.seed(42)
+
     titles = [
         "Data Scientist","Software Engineer","Product Manager",
         "UX Designer","DevOps Engineer","Data Analyst",
@@ -84,8 +91,8 @@ def generate_data(rows=500):
         "job_title": np.random.choice(titles, rows),
         "company": np.random.choice(companies, rows),
         "country": np.random.choice(countries, rows),
-        "mode": np.random.choice(modes, rows, p=[0.4, 0.35, 0.25]),
-        "contract": np.random.choice(contracts, rows, p=[0.7, 0.15, 0.1, 0.05]),
+        "mode": np.random.choice(modes, rows, p=[0.4,0.35,0.25]),
+        "contract": np.random.choice(contracts, rows, p=[0.7,0.15,0.1,0.05]),
         "date_posted": [
             datetime.today() - timedelta(days=np.random.randint(0,60))
             for _ in range(rows)
@@ -94,15 +101,11 @@ def generate_data(rows=500):
     })
     return df
 
-@st.cache_data
-def load_data():
-    return generate_data()
-
-df = load_data()
+df = generate_data()
 
 # ================= MAIN PAGE =================
 st.title("📊 Global Job Market Intelligence")
-st.caption("High-level analysis of roles, skills, and hiring trends")
+st.caption("Clean, executive-level view of hiring trends and skill demand")
 
 # -------- KPIs --------
 c1, c2, c3, c4 = st.columns(4)
@@ -110,7 +113,7 @@ with c1: metric_card("Active Jobs", len(df))
 with c2: metric_card("Companies", df["company"].nunique())
 with c3: metric_card("Countries", df["country"].nunique())
 with c4: metric_card(
-    "Avg Skills per Job",
+    "Avg Skills / Job",
     int(df["linkedin_skills"].str.count(",").mean() + 1)
 )
 
@@ -121,25 +124,37 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Top In-Demand Roles")
-    roles = df["job_title"].value_counts().head(10).reset_index()
-    roles.columns = ["Role", "Openings"]
+    role_df = df["job_title"].value_counts().head(10).reset_index()
+    role_df.columns = ["Role", "Openings"]
+
     fig_roles = px.bar(
-        roles, x="Openings", y="Role",
-        orientation="h", template="plotly_white",
-        color="Openings"
+        role_df,
+        x="Openings",
+        y="Role",
+        orientation="h",
+        template="plotly_white",
+        color="Openings",
+        color_continuous_scale=["#DBEAFE", PRIMARY]
     )
+    fig_roles.update_layout(font=dict(color=TEXT))
     st.plotly_chart(fig_roles, use_container_width=True)
 
 with col2:
     st.subheader("Top Hiring Companies")
-    comps = df["company"].value_counts().head(10).reset_index()
-    comps.columns = ["Company", "Openings"]
-    fig_comps = px.bar(
-        comps, x="Openings", y="Company",
-        orientation="h", template="plotly_white",
-        color="Openings"
+    comp_df = df["company"].value_counts().head(10).reset_index()
+    comp_df.columns = ["Company", "Openings"]
+
+    fig_comp = px.bar(
+        comp_df,
+        x="Openings",
+        y="Company",
+        orientation="h",
+        template="plotly_white",
+        color="Openings",
+        color_continuous_scale=["#E0F2FE", "#0284C7"]
     )
-    st.plotly_chart(fig_comps, use_container_width=True)
+    fig_comp.update_layout(font=dict(color=TEXT))
+    st.plotly_chart(fig_comp, use_container_width=True)
 
 st.divider()
 
@@ -149,19 +164,27 @@ c1, c2 = st.columns(2)
 with c1:
     st.subheader("Work Mode Distribution")
     fig_mode = px.pie(
-        df, names="mode",
+        df,
+        names="mode",
         hole=0.45,
-        template="plotly_white"
+        template="plotly_white",
+        color_discrete_sequence=[PRIMARY, SECONDARY, ACCENT]
     )
+    fig_mode.update_layout(font=dict(color=TEXT))
     st.plotly_chart(fig_mode, use_container_width=True)
 
 with c2:
     st.subheader("Contract Type Distribution")
     fig_contract = px.pie(
-        df, names="contract",
+        df,
+        names="contract",
         hole=0.45,
-        template="plotly_white"
+        template="plotly_white",
+        color_discrete_sequence=[
+            PRIMARY, "#38BDF8", "#A855F7", "#F97316"
+        ]
     )
+    fig_contract.update_layout(font=dict(color=TEXT))
     st.plotly_chart(fig_contract, use_container_width=True)
 
 st.divider()
@@ -177,13 +200,18 @@ fig_skills = px.bar(
     x="Skill",
     y="Demand",
     template="plotly_white",
-    color="Demand"
+    color="Demand",
+    color_continuous_scale=["#DBEAFE", "#1E40AF"]
+)
+fig_skills.update_layout(
+    font=dict(color=TEXT),
+    xaxis_tickangle=-35
 )
 st.plotly_chart(fig_skills, use_container_width=True)
 
 st.divider()
 
-# -------- GEO --------
+# -------- GEOGRAPHY --------
 st.subheader("🌍 Job Distribution by Country")
 geo = df["country"].value_counts().reset_index()
 geo.columns = ["Country", "Jobs"]
@@ -194,6 +222,7 @@ fig_geo = px.choropleth(
     locationmode="country names",
     color="Jobs",
     template="plotly_white",
-    color_continuous_scale="Blues"
+    color_continuous_scale=["#DBEAFE", "#1E3A8A"]
 )
+fig_geo.update_layout(font=dict(color=TEXT))
 st.plotly_chart(fig_geo, use_container_width=True)
